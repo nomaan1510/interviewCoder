@@ -188,6 +188,8 @@ const InterviewPlatform = () => {
   const [audioEnabled, setAudioEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showInputPanel, setShowInputPanel] = useState(false);
+  const [customInput, setCustomInput] = useState('');
   const [output, setOutput] = useState('');
   const [roomId, setRoomId] = useState('');
   const [linkCopied, setLinkCopied] = useState(false);
@@ -809,7 +811,7 @@ const InterviewPlatform = () => {
         body: JSON.stringify({
           source_code: btoa(code),
           language_id: languageId,
-          stdin: btoa(''),
+          stdin: btoa(customInput),
         })
       });
 
@@ -1253,6 +1255,13 @@ const InterviewPlatform = () => {
           </button>
           <button 
             className="icon-btn" 
+            onClick={() => setShowInputPanel(!showInputPanel)}
+            title="Custom Input"
+          >
+            <FileText size={20} />
+          </button>
+          <button 
+            className="icon-btn" 
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
           >
@@ -1364,6 +1373,37 @@ const InterviewPlatform = () => {
               readOnly 
               style={{ color: JUDGE0_API_KEY ? '#0a0' : '#f00' }}
             />
+          </div>
+        </div>
+      )}
+
+      {showInputPanel && (
+        <div className="settings-panel" style={{ right: '140px' }}>
+          <div className="settings-header">
+            Custom Input
+          </div>
+          <div className="setting-item">
+            <label className="setting-label">Enter input for your program (optional)</label>
+            <textarea
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder="Enter input here... (e.g., numbers, text)"
+              style={{
+                width: '100%',
+                minHeight: '200px',
+                padding: '10px',
+                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(99, 179, 237, 0.3)',
+                borderRadius: '8px',
+                color: '#e8eaed',
+                fontSize: '13px',
+                fontFamily: 'Consolas, Monaco, monospace',
+                resize: 'vertical'
+              }}
+            />
+          </div>
+          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+            💡 Tip: Each line will be treated as separate input
           </div>
         </div>
       )}
