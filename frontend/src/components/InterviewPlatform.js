@@ -7,7 +7,9 @@ import {
 } from 'lucide-react';
 import './InterviewPlatform.css';
 
-const SIGNALING_SERVER = process.env.REACT_APP_SIGNALING_SERVER || 'http://localhost:3001';
+const SIGNALING_SERVER =
+  process.env.REACT_APP_API_URL || 'http://localhost:3001';
+
 
 // Boilerplate code for all languages
 const BOILERPLATE_CODE = {
