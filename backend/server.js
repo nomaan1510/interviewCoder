@@ -6,10 +6,22 @@ const cors = require('cors');
 const app = express();
 const server = http.createServer(app);
 
+const allowedOrigins = [
+  "http://localhost:3000",
+  "nomaan-interviewcoder.netlify.app"
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST"],
+  credentials: true
+}));
+
 const io = socketIo(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -114,6 +126,10 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3001;
+
+app.get("/", (req, res) => {
+  res.send("Signaling server is running 🚀");
+});
 
 server.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);
