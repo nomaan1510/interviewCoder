@@ -1,15 +1,36 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import io from 'socket.io-client';
-import { 
-  Camera, CameraOff, Mic, MicOff, MonitorUp, Code, FileText, 
-  Clock, Settings, Maximize2, Play, Copy, Check, Share2, PhoneOff,
-  MessageSquare, Send, Minimize2, X
-} from 'lucide-react';
-import './InterviewPlatform.css';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import io from "socket.io-client";
+import {
+  Camera,
+  CameraOff,
+  Mic,
+  MicOff,
+  MonitorUp,
+  Code,
+  FileText,
+  Clock,
+  Settings,
+  Maximize2,
+  Play,
+  Copy,
+  Check,
+  Share2,
+  PhoneOff,
+  MessageSquare,
+  Send,
+  Minimize2,
+  X,
+} from "lucide-react";
+import "./InterviewPlatform.css";
 
 const SIGNALING_SERVER =
-  process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
+  process.env.REACT_APP_API_URL || "http://localhost:3001";
 
 // Boilerplate code for all languages
 const BOILERPLATE_CODE = {
@@ -176,13 +197,13 @@ fun main() {
     val a = 5
     val b = 3
     println("Sum: \${a + b}")
-}`
+}`,
 };
 
 const InterviewPlatform = () => {
   // State management
-  const [mode, setMode] = useState('ide');
-  const [language, setLanguage] = useState('javascript');
+  const [mode, setMode] = useState("ide");
+  const [language, setLanguage] = useState("javascript");
   const [timeLimit, setTimeLimit] = useState(60);
   const [timeRemaining, setTimeRemaining] = useState(60 * 60);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
@@ -191,26 +212,26 @@ const InterviewPlatform = () => {
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInputPanel, setShowInputPanel] = useState(false);
-  const [customInput, setCustomInput] = useState('');
-  const [output, setOutput] = useState('');
-  const [roomId, setRoomId] = useState('');
+  const [customInput, setCustomInput] = useState("");
+  const [output, setOutput] = useState("");
+  const [roomId, setRoomId] = useState("");
   const [linkCopied, setLinkCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState("disconnected");
   const [userRole, setUserRole] = useState(null);
-  const [userName, setUserName] = useState('');
+  const [userName, setUserName] = useState("");
   const [showRoleModal, setShowRoleModal] = useState(true);
   const [showEndCallModal, setShowEndCallModal] = useState(false);
-  
+
   // Chat state - FIXED: Use controlled state instead of defaultValue
   const [messages, setMessages] = useState([]);
   const [showChat, setShowChat] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [chatInput, setChatInput] = useState(''); // NEW: Controlled input
-  
+  const [chatInput, setChatInput] = useState(""); // NEW: Controlled input
+
   // Code execution state
   const [isExecuting, setIsExecuting] = useState(false);
-  
+
   // Refs for UNCONTROLLED components (this prevents focus loss!)
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
@@ -221,15 +242,15 @@ const InterviewPlatform = () => {
   const chatMessagesRef = useRef(null);
   const codeEditorRef = useRef(null);
   const documentEditorRef = useRef(null);
-  
+
   // Track values without causing re-renders
   const isReceivingUpdate = useRef(false);
   const emitTimeoutRef = useRef(null);
 
   // Judge0 API configuration
-  const JUDGE0_API = 'https://judge0-ce.p.rapidapi.com';
-  const JUDGE0_API_KEY = process.env.REACT_APP_JUDGE0_API_KEY || '';
-  
+  const JUDGE0_API = "https://judge0-ce.p.rapidapi.com";
+  const JUDGE0_API_KEY = process.env.REACT_APP_JUDGE0_API_KEY || "";
+
   // Language ID mapping for Judge0
   const languageIds = {
     javascript: 63,
@@ -244,24 +265,37 @@ const InterviewPlatform = () => {
     ruby: 72,
     php: 68,
     swift: 83,
-    kotlin: 78
+    kotlin: 78,
   };
 
   const languages = [
-    'javascript', 'python', 'java', 'cpp', 'c', 'csharp',
-    'go', 'rust', 'typescript', 'ruby', 'php', 'swift', 'kotlin'
+    "javascript",
+    "python",
+    "java",
+    "cpp",
+    "c",
+    "csharp",
+    "go",
+    "rust",
+    "typescript",
+    "ruby",
+    "php",
+    "swift",
+    "kotlin",
   ];
 
   const iceServers = {
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+    ],
   };
 
   const generateRoomId = () => {
-    return Math.random().toString(36).substring(2, 10) + 
-           Math.random().toString(36).substring(2, 10);
+    return (
+      Math.random().toString(36).substring(2, 10) +
+      Math.random().toString(36).substring(2, 10)
+    );
   };
 
   // Auto-scroll chat to bottom
@@ -281,27 +315,30 @@ const InterviewPlatform = () => {
   // Initialize room and socket
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const roomFromUrl = urlParams.get('room');
-    
+    const roomFromUrl = urlParams.get("room");
+
     if (roomFromUrl) {
       setRoomId(roomFromUrl);
     } else {
       const newRoomId = generateRoomId();
       setRoomId(newRoomId);
-      window.history.pushState({}, '', `?room=${newRoomId}`);
+      window.history.pushState({}, "", `?room=${newRoomId}`);
     }
 
-    socketRef.current = io(SIGNALING_SERVER);
-    
+    socketRef.current = io(SIGNALING_SERVER, {
+      transports: ["websocket"],
+      withCredentials: true,
+    });
+
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach(track => track.stop());
+        screenStreamRef.current.getTracks().forEach((track) => track.stop());
       }
       if (emitTimeoutRef.current) {
         clearTimeout(emitTimeoutRef.current);
@@ -316,57 +353,59 @@ const InterviewPlatform = () => {
     const socket = socketRef.current;
 
     const handleConnect = () => {
-      console.log('Connected to signaling server');
-      setConnectionStatus('connected');
+      console.log("Connected to signaling server");
+      setConnectionStatus("connected");
     };
 
     const handleDisconnect = () => {
-      console.log('Disconnected from signaling server');
-      setConnectionStatus('disconnected');
+      console.log("Disconnected from signaling server");
+      setConnectionStatus("disconnected");
     };
 
     const handleRoomJoined = async ({ roomId: joinedRoom, users }) => {
-      console.log('Joined room:', joinedRoom, 'with users:', users);
-      setConnectionStatus('in-room');
-      
+      console.log("Joined room:", joinedRoom, "with users:", users);
+      setConnectionStatus("in-room");
+
       await startLocalVideo();
-      
+
       for (const userId of users) {
         await createPeerConnection(userId, true);
       }
     };
 
     const handleUserJoined = async (userId) => {
-      console.log('User joined:', userId);
+      console.log("User joined:", userId);
       await createPeerConnection(userId, false);
     };
 
     const handleOffer = async ({ offer, from }) => {
-      console.log('Received offer from:', from);
-      const pc = peerConnectionsRef.current.get(from) || await createPeerConnection(from, false);
-      
+      console.log("Received offer from:", from);
+      const pc =
+        peerConnectionsRef.current.get(from) ||
+        (await createPeerConnection(from, false));
+
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
-        
-        socket.emit('answer', {
+
+        socket.emit("answer", {
           answer: answer,
-          to: from
+          to: from,
         });
       } catch (error) {
-        console.error('Error handling offer:', error);
+        console.error("Error handling offer:", error);
       }
     };
 
     const handleAnswer = async ({ answer, from }) => {
-      console.log('Received answer from:', from);
+      console.log("Received answer from:", from);
       const pc = peerConnectionsRef.current.get(from);
       if (pc) {
         try {
           await pc.setRemoteDescription(new RTCSessionDescription(answer));
         } catch (error) {
-          console.error('Error handling answer:', error);
+          console.error("Error handling answer:", error);
         }
       }
     };
@@ -377,13 +416,13 @@ const InterviewPlatform = () => {
         try {
           await pc.addIceCandidate(new RTCIceCandidate(candidate));
         } catch (error) {
-          console.error('Error adding ICE candidate:', error);
+          console.error("Error adding ICE candidate:", error);
         }
       }
     };
 
     const handleUserLeft = (userId) => {
-      console.log('User left:', userId);
+      console.log("User left:", userId);
       const pc = peerConnectionsRef.current.get(userId);
       if (pc) {
         pc.close();
@@ -391,19 +430,26 @@ const InterviewPlatform = () => {
       }
     };
 
-    const handleCodeUpdate = ({ code: newCode, language: newLang, mode: newMode }) => {
+    const handleCodeUpdate = ({
+      code: newCode,
+      language: newLang,
+      mode: newMode,
+    }) => {
       if (isReceivingUpdate.current) return;
-      
+
       isReceivingUpdate.current = true;
-      
+
       // Update DOM directly without re-render
-      if (codeEditorRef.current && document.activeElement !== codeEditorRef.current) {
+      if (
+        codeEditorRef.current &&
+        document.activeElement !== codeEditorRef.current
+      ) {
         codeEditorRef.current.value = newCode;
       }
-      
+
       setLanguage(newLang);
       setMode(newMode);
-      
+
       setTimeout(() => {
         isReceivingUpdate.current = false;
       }, 100);
@@ -411,13 +457,16 @@ const InterviewPlatform = () => {
 
     const handleDocumentUpdate = ({ text }) => {
       if (isReceivingUpdate.current) return;
-      
+
       isReceivingUpdate.current = true;
-      
-      if (documentEditorRef.current && document.activeElement !== documentEditorRef.current) {
+
+      if (
+        documentEditorRef.current &&
+        document.activeElement !== documentEditorRef.current
+      ) {
         documentEditorRef.current.value = text;
       }
-      
+
       setTimeout(() => {
         isReceivingUpdate.current = false;
       }, 100);
@@ -427,9 +476,20 @@ const InterviewPlatform = () => {
       setOutput(newOutput);
     };
 
-    const handleChatMessage = ({ message, senderId, senderRole, senderName, timestamp }) => {
-      console.log('Received chat message:', { message, senderId, senderRole, senderName });
-      
+    const handleChatMessage = ({
+      message,
+      senderId,
+      senderRole,
+      senderName,
+      timestamp,
+    }) => {
+      console.log("Received chat message:", {
+        message,
+        senderId,
+        senderRole,
+        senderName,
+      });
+
       const newMsg = {
         id: Date.now() + Math.random(),
         text: message,
@@ -437,14 +497,14 @@ const InterviewPlatform = () => {
         senderRole,
         senderName,
         timestamp,
-        isOwn: senderId === socket.id
+        isOwn: senderId === socket.id,
       };
-      
-      setMessages(prev => [...prev, newMsg]);
-      
+
+      setMessages((prev) => [...prev, newMsg]);
+
       if (senderId !== socket.id) {
-        setUnreadCount(prev => {
-          const chatPanel = document.querySelector('.chat-panel');
+        setUnreadCount((prev) => {
+          const chatPanel = document.querySelector(".chat-panel");
           if (!chatPanel) {
             return prev + 1;
           }
@@ -453,37 +513,37 @@ const InterviewPlatform = () => {
       }
     };
 
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('room-joined', handleRoomJoined);
-    socket.on('user-joined', handleUserJoined);
-    socket.on('offer', handleOffer);
-    socket.on('answer', handleAnswer);
-    socket.on('ice-candidate', handleIceCandidate);
-    socket.on('user-left', handleUserLeft);
-    socket.on('code-update', handleCodeUpdate);
-    socket.on('document-update', handleDocumentUpdate);
-    socket.on('output-update', handleOutputUpdate);
-    socket.on('chat-message', handleChatMessage);
+    socket.on("connect", handleConnect);
+    socket.on("disconnect", handleDisconnect);
+    socket.on("room-joined", handleRoomJoined);
+    socket.on("user-joined", handleUserJoined);
+    socket.on("offer", handleOffer);
+    socket.on("answer", handleAnswer);
+    socket.on("ice-candidate", handleIceCandidate);
+    socket.on("user-left", handleUserLeft);
+    socket.on("code-update", handleCodeUpdate);
+    socket.on("document-update", handleDocumentUpdate);
+    socket.on("output-update", handleOutputUpdate);
+    socket.on("chat-message", handleChatMessage);
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('room-joined', handleRoomJoined);
-      socket.off('user-joined', handleUserJoined);
-      socket.off('offer', handleOffer);
-      socket.off('answer', handleAnswer);
-      socket.off('ice-candidate', handleIceCandidate);
-      socket.off('user-left', handleUserLeft);
-      socket.off('code-update', handleCodeUpdate);
-      socket.off('document-update', handleDocumentUpdate);
-      socket.off('output-update', handleOutputUpdate);
-      socket.off('chat-message', handleChatMessage);
+      socket.off("connect", handleConnect);
+      socket.off("disconnect", handleDisconnect);
+      socket.off("room-joined", handleRoomJoined);
+      socket.off("user-joined", handleUserJoined);
+      socket.off("offer", handleOffer);
+      socket.off("answer", handleAnswer);
+      socket.off("ice-candidate", handleIceCandidate);
+      socket.off("user-left", handleUserLeft);
+      socket.off("code-update", handleCodeUpdate);
+      socket.off("document-update", handleDocumentUpdate);
+      socket.off("output-update", handleOutputUpdate);
+      socket.off("chat-message", handleChatMessage);
     };
   }, [roomId]);
 
   useEffect(() => {
-    if (socketRef.current && roomId && connectionStatus === 'connected') {
+    if (socketRef.current && roomId && connectionStatus === "connected") {
       joinRoom(roomId);
     }
   }, [roomId, connectionStatus]);
@@ -492,7 +552,7 @@ const InterviewPlatform = () => {
     let interval;
     if (isTimerRunning && timeRemaining > 0) {
       interval = setInterval(() => {
-        setTimeRemaining(prev => Math.max(0, prev - 1));
+        setTimeRemaining((prev) => Math.max(0, prev - 1));
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -501,15 +561,15 @@ const InterviewPlatform = () => {
   // Update code editor when language changes
   useEffect(() => {
     if (codeEditorRef.current) {
-      codeEditorRef.current.value = BOILERPLATE_CODE[language] || '';
-      
+      codeEditorRef.current.value = BOILERPLATE_CODE[language] || "";
+
       // Emit change
       if (socketRef.current && roomId && !isReceivingUpdate.current) {
-        socketRef.current.emit('code-update', {
+        socketRef.current.emit("code-update", {
           roomId,
           code: codeEditorRef.current.value,
           language,
-          mode
+          mode,
         });
       }
     }
@@ -519,18 +579,18 @@ const InterviewPlatform = () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
-        audio: true
+        audio: true,
       });
-      
+
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      
+
       return stream;
     } catch (error) {
-      console.error('Error accessing media devices:', error);
-      alert('Unable to access camera/microphone. Please check permissions.');
+      console.error("Error accessing media devices:", error);
+      alert("Unable to access camera/microphone. Please check permissions.");
     }
   };
 
@@ -539,42 +599,42 @@ const InterviewPlatform = () => {
     peerConnectionsRef.current.set(userId, pc);
 
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+      localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
       });
     }
 
     pc.onicecandidate = (event) => {
       if (event.candidate && socketRef.current) {
-        socketRef.current.emit('ice-candidate', {
+        socketRef.current.emit("ice-candidate", {
           candidate: event.candidate,
-          to: userId
+          to: userId,
         });
       }
     };
 
     pc.ontrack = (event) => {
-      console.log('Received remote track from:', userId);
+      console.log("Received remote track from:", userId);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log('Connection state:', pc.connectionState);
+      console.log("Connection state:", pc.connectionState);
     };
 
     if (shouldCreateOffer) {
       try {
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
-        
-        socketRef.current.emit('offer', {
+
+        socketRef.current.emit("offer", {
           offer: offer,
-          to: userId
+          to: userId,
         });
       } catch (error) {
-        console.error('Error creating offer:', error);
+        console.error("Error creating offer:", error);
       }
     }
 
@@ -583,7 +643,7 @@ const InterviewPlatform = () => {
 
   const joinRoom = (room) => {
     if (socketRef.current) {
-      socketRef.current.emit('join-room', room);
+      socketRef.current.emit("join-room", room);
     }
   };
 
@@ -611,30 +671,30 @@ const InterviewPlatform = () => {
     if (!isScreenSharing) {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: true
+          video: true,
         });
-        
+
         screenStreamRef.current = screenStream;
         const videoTrack = screenStream.getVideoTracks()[0];
-        
-        peerConnectionsRef.current.forEach(pc => {
-          const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+
+        peerConnectionsRef.current.forEach((pc) => {
+          const sender = pc.getSenders().find((s) => s.track?.kind === "video");
           if (sender) {
             sender.replaceTrack(videoTrack);
           }
         });
-        
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = screenStream;
         }
-        
+
         setIsScreenSharing(true);
-        
+
         videoTrack.onended = () => {
           stopScreenShare();
         };
       } catch (error) {
-        console.error('Error sharing screen:', error);
+        console.error("Error sharing screen:", error);
       }
     } else {
       stopScreenShare();
@@ -643,25 +703,25 @@ const InterviewPlatform = () => {
 
   const stopScreenShare = () => {
     if (screenStreamRef.current) {
-      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
-    
+
     if (localStreamRef.current) {
       const videoTrack = localStreamRef.current.getVideoTracks()[0];
-      
-      peerConnectionsRef.current.forEach(pc => {
-        const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+
+      peerConnectionsRef.current.forEach((pc) => {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
         if (sender && videoTrack) {
           sender.replaceTrack(videoTrack);
         }
       });
-      
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = localStreamRef.current;
       }
     }
-    
+
     setIsScreenSharing(false);
   };
 
@@ -671,37 +731,37 @@ const InterviewPlatform = () => {
 
   const endCall = () => {
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
     }
-    
+
     if (screenStreamRef.current) {
-      screenStreamRef.current.getTracks().forEach(track => track.stop());
+      screenStreamRef.current.getTracks().forEach((track) => track.stop());
       screenStreamRef.current = null;
     }
-    
-    peerConnectionsRef.current.forEach(pc => {
+
+    peerConnectionsRef.current.forEach((pc) => {
       pc.close();
     });
     peerConnectionsRef.current.clear();
-    
+
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
-    
+
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = null;
     }
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = null;
     }
-    
-    setConnectionStatus('disconnected');
+
+    setConnectionStatus("disconnected");
     setVideoEnabled(true);
     setAudioEnabled(true);
     setIsScreenSharing(false);
     setShowEndCallModal(false);
-    
+
     window.location.href = window.location.origin + window.location.pathname;
   };
 
@@ -718,37 +778,43 @@ const InterviewPlatform = () => {
   };
 
   // Debounced emit for code changes
-  const emitCodeUpdate = useCallback((newCode) => {
-    if (emitTimeoutRef.current) {
-      clearTimeout(emitTimeoutRef.current);
-    }
-    
-    emitTimeoutRef.current = setTimeout(() => {
-      if (socketRef.current && roomId && !isReceivingUpdate.current) {
-        socketRef.current.emit('code-update', {
-          roomId,
-          code: newCode,
-          language,
-          mode
-        });
+  const emitCodeUpdate = useCallback(
+    (newCode) => {
+      if (emitTimeoutRef.current) {
+        clearTimeout(emitTimeoutRef.current);
       }
-    }, 300);
-  }, [roomId, language, mode]);
 
-  const emitDocumentUpdate = useCallback((newText) => {
-    if (emitTimeoutRef.current) {
-      clearTimeout(emitTimeoutRef.current);
-    }
-    
-    emitTimeoutRef.current = setTimeout(() => {
-      if (socketRef.current && roomId && !isReceivingUpdate.current) {
-        socketRef.current.emit('document-update', {
-          roomId,
-          text: newText
-        });
+      emitTimeoutRef.current = setTimeout(() => {
+        if (socketRef.current && roomId && !isReceivingUpdate.current) {
+          socketRef.current.emit("code-update", {
+            roomId,
+            code: newCode,
+            language,
+            mode,
+          });
+        }
+      }, 300);
+    },
+    [roomId, language, mode]
+  );
+
+  const emitDocumentUpdate = useCallback(
+    (newText) => {
+      if (emitTimeoutRef.current) {
+        clearTimeout(emitTimeoutRef.current);
       }
-    }, 300);
-  }, [roomId]);
+
+      emitTimeoutRef.current = setTimeout(() => {
+        if (socketRef.current && roomId && !isReceivingUpdate.current) {
+          socketRef.current.emit("document-update", {
+            roomId,
+            text: newText,
+          });
+        }
+      }, 300);
+    },
+    [roomId]
+  );
 
   // Handle code change - NO STATE UPDATE = NO RE-RENDER = NO FOCUS LOSS
   const handleCodeChange = (e) => {
@@ -761,63 +827,67 @@ const InterviewPlatform = () => {
 
   // FIXED: Improved error handling with detailed messages
   const executeCode = async () => {
-    const code = codeEditorRef.current?.value || '';
-    
+    const code = codeEditorRef.current?.value || "";
+
     if (!code.trim()) {
-      setOutput('⚠️ Error: No code to execute');
+      setOutput("⚠️ Error: No code to execute");
       return;
     }
 
     if (!JUDGE0_API_KEY) {
-      const errorMsg = '⚠️ Judge0 API Key Missing!\n\n1. Go to: https://rapidapi.com/judge0-official/api/judge0-ce\n2. Sign up and get FREE API key\n3. Add to .env file:\n   REACT_APP_JUDGE0_API_KEY=your_key\n4. RESTART both server and React app';
+      const errorMsg =
+        "⚠️ Judge0 API Key Missing!\n\n1. Go to: https://rapidapi.com/judge0-official/api/judge0-ce\n2. Sign up and get FREE API key\n3. Add to .env file:\n   REACT_APP_JUDGE0_API_KEY=your_key\n4. RESTART both server and React app";
       setOutput(errorMsg);
-      
+
       if (socketRef.current && roomId) {
-        socketRef.current.emit('output-update', {
+        socketRef.current.emit("output-update", {
           roomId,
-          output: errorMsg
+          output: errorMsg,
         });
       }
       return;
     }
 
     setIsExecuting(true);
-    const submittingMsg = '⏳ Submitting code...';
+    const submittingMsg = "⏳ Submitting code...";
     setOutput(submittingMsg);
 
     if (socketRef.current && roomId) {
-      socketRef.current.emit('output-update', {
+      socketRef.current.emit("output-update", {
         roomId,
-        output: submittingMsg
+        output: submittingMsg,
       });
     }
 
     try {
       const languageId = languageIds[language];
-      
+
       if (!languageId) {
         throw new Error(`Language ${language} is not supported`);
       }
 
-      console.log('Submitting to Judge0...');
-      console.log('Language:', language, 'ID:', languageId);
-      console.log('Code length:', code.length);
+      console.log("Submitting to Judge0...");
+      console.log("Language:", language, "ID:", languageId);
+      console.log("Code length:", code.length);
 
-      const submitResponse = await fetch(`${JUDGE0_API}/submissions?base64_encoded=true&wait=false`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-RapidAPI-Key': JUDGE0_API_KEY,
-          'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
-        },
-        body: JSON.stringify({
-          source_code: btoa(code),
-          language_id: languageId,
-          stdin: btoa(customInput),
-        })
-      });
+      const submitResponse = await fetch(
+        `${JUDGE0_API}/submissions?base64_encoded=true&wait=false`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-RapidAPI-Key": JUDGE0_API_KEY,
+            "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+          },
+          body: JSON.stringify({
+            source_code: btoa(code),
+            language_id: languageId,
+            stdin: btoa(customInput),
+          }),
+        }
+      );
 
-      console.log('Submit response status:', submitResponse.status);
+      console.log("Submit response status:", submitResponse.status);
 
       if (!submitResponse.ok) {
         let errorText;
@@ -827,49 +897,60 @@ const InterviewPlatform = () => {
         } catch (e) {
           errorText = await submitResponse.text();
         }
-        
-        console.error('Submit failed:', submitResponse.status, errorText);
-        
+
+        console.error("Submit failed:", submitResponse.status, errorText);
+
         if (submitResponse.status === 403) {
-          throw new Error('🚫 403 Forbidden\n\nYour RapidAPI key is invalid or you are not subscribed to Judge0.\n\nSteps to fix:\n1. Go to https://rapidapi.com/judge0-official/api/judge0-ce\n2. Make sure you are LOGGED IN\n3. Click "Subscribe" and select the FREE Basic plan\n4. Copy your NEW API key from the Endpoints tab\n5. Update frontend/.env file with the new key\n6. RESTART React app (Ctrl+C then npm start)');
+          throw new Error(
+            '🚫 403 Forbidden\n\nYour RapidAPI key is invalid or you are not subscribed to Judge0.\n\nSteps to fix:\n1. Go to https://rapidapi.com/judge0-official/api/judge0-ce\n2. Make sure you are LOGGED IN\n3. Click "Subscribe" and select the FREE Basic plan\n4. Copy your NEW API key from the Endpoints tab\n5. Update frontend/.env file with the new key\n6. RESTART React app (Ctrl+C then npm start)'
+          );
         } else if (submitResponse.status === 429) {
-          throw new Error('⏱️ Rate Limit Exceeded\n\nYou have exceeded the free tier limit (50 requests/day).\n\nWait 24 hours or upgrade your plan at RapidAPI.');
+          throw new Error(
+            "⏱️ Rate Limit Exceeded\n\nYou have exceeded the free tier limit (50 requests/day).\n\nWait 24 hours or upgrade your plan at RapidAPI."
+          );
         } else if (submitResponse.status === 401) {
-          throw new Error('🔑 Unauthorized\n\nYour API key is missing or invalid.\n\nCheck your .env file and make sure REACT_APP_JUDGE0_API_KEY is set correctly.');
+          throw new Error(
+            "🔑 Unauthorized\n\nYour API key is missing or invalid.\n\nCheck your .env file and make sure REACT_APP_JUDGE0_API_KEY is set correctly."
+          );
         }
-        
-        throw new Error(`Submission failed (${submitResponse.status}):\n\n${errorText}`);
+
+        throw new Error(
+          `Submission failed (${submitResponse.status}):\n\n${errorText}`
+        );
       }
 
       const submitData = await submitResponse.json();
       const token = submitData.token;
 
-      console.log('Submission token:', token);
+      console.log("Submission token:", token);
 
-      const executingMessage = '⚙️ Code submitted. Waiting for results...';
+      const executingMessage = "⚙️ Code submitted. Waiting for results...";
       setOutput(executingMessage);
-      
+
       if (socketRef.current && roomId) {
-        socketRef.current.emit('output-update', {
+        socketRef.current.emit("output-update", {
           roomId,
-          output: executingMessage
+          output: executingMessage,
         });
       }
 
       // Poll for results
       let attempts = 0;
       const maxAttempts = 20;
-      
+
       while (attempts < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const resultResponse = await fetch(`${JUDGE0_API}/submissions/${token}?base64_encoded=true`, {
-          method: 'GET',
-          headers: {
-            'X-RapidAPI-Key': JUDGE0_API_KEY,
-            'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        const resultResponse = await fetch(
+          `${JUDGE0_API}/submissions/${token}?base64_encoded=true`,
+          {
+            method: "GET",
+            headers: {
+              "X-RapidAPI-Key": JUDGE0_API_KEY,
+              "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com",
+            },
           }
-        });
+        );
 
         if (!resultResponse.ok) {
           let errorText;
@@ -879,15 +960,21 @@ const InterviewPlatform = () => {
           } catch (e) {
             errorText = await resultResponse.text();
           }
-          console.error('Result fetch failed:', resultResponse.status, errorText);
-          throw new Error(`Failed to get results (${resultResponse.status}):\n${errorText}`);
+          console.error(
+            "Result fetch failed:",
+            resultResponse.status,
+            errorText
+          );
+          throw new Error(
+            `Failed to get results (${resultResponse.status}):\n${errorText}`
+          );
         }
 
         const resultData = await resultResponse.json();
-        
+
         // Helper function to decode base64 with UTF-8 support
         const decodeBase64 = (str) => {
-          if (!str) return '';
+          if (!str) return "";
           try {
             // Decode base64 to binary string, then decode UTF-8
             const binaryString = atob(str);
@@ -895,34 +982,47 @@ const InterviewPlatform = () => {
             for (let i = 0; i < binaryString.length; i++) {
               bytes[i] = binaryString.charCodeAt(i);
             }
-            return new TextDecoder('utf-8').decode(bytes);
+            return new TextDecoder("utf-8").decode(bytes);
           } catch (e) {
             return str;
           }
         };
-        
+
         // Decode base64 responses with UTF-8 support
-        if (resultData.stdout) resultData.stdout = decodeBase64(resultData.stdout);
-        if (resultData.stderr) resultData.stderr = decodeBase64(resultData.stderr);
-        if (resultData.compile_output) resultData.compile_output = decodeBase64(resultData.compile_output);
-        if (resultData.message) resultData.message = decodeBase64(resultData.message);
-        
-        console.log('Attempt', attempts + 1, '- Status:', resultData.status.description, '(ID:', resultData.status.id + ')');
-        
-        const progressMessage = `⏳ Executing... (${attempts + 1}/${maxAttempts})\nStatus: ${resultData.status.description}`;
+        if (resultData.stdout)
+          resultData.stdout = decodeBase64(resultData.stdout);
+        if (resultData.stderr)
+          resultData.stderr = decodeBase64(resultData.stderr);
+        if (resultData.compile_output)
+          resultData.compile_output = decodeBase64(resultData.compile_output);
+        if (resultData.message)
+          resultData.message = decodeBase64(resultData.message);
+
+        console.log(
+          "Attempt",
+          attempts + 1,
+          "- Status:",
+          resultData.status.description,
+          "(ID:",
+          resultData.status.id + ")"
+        );
+
+        const progressMessage = `⏳ Executing... (${
+          attempts + 1
+        }/${maxAttempts})\nStatus: ${resultData.status.description}`;
         setOutput(progressMessage);
-        
+
         if (socketRef.current && roomId) {
-          socketRef.current.emit('output-update', {
+          socketRef.current.emit("output-update", {
             roomId,
-            output: progressMessage
+            output: progressMessage,
           });
         }
-        
+
         // Check if execution completed
         if (resultData.status.id > 2) {
-          let newOutput = '';
-          
+          let newOutput = "";
+
           if (resultData.status.id === 3) {
             // Accepted - Success
             newOutput = `✅ Execution Successful\n\n`;
@@ -937,29 +1037,45 @@ const InterviewPlatform = () => {
             newOutput += `\n⏱️ Time: ${resultData.time}s | 💾 Memory: ${resultData.memory} KB`;
           } else if (resultData.status.id === 4) {
             // Wrong Answer
-            newOutput = `❌ Wrong Answer\n\n${resultData.stdout || '(no output)'}`;
+            newOutput = `❌ Wrong Answer\n\n${
+              resultData.stdout || "(no output)"
+            }`;
           } else if (resultData.status.id === 5) {
             // Time Limit Exceeded
             newOutput = `⏱️ Time Limit Exceeded\n\nYour code took too long to execute.`;
           } else if (resultData.status.id === 6) {
             // Compilation Error
-            newOutput = `🔨 Compilation Error\n\n${resultData.compile_output || resultData.stderr || 'Unknown compilation error'}`;
-            
-            if (resultData.compile_output && resultData.compile_output.includes('expected')) {
-              newOutput += '\n\n💡 Tip: Check for missing semicolons, brackets, or typos.';
+            newOutput = `🔨 Compilation Error\n\n${
+              resultData.compile_output ||
+              resultData.stderr ||
+              "Unknown compilation error"
+            }`;
+
+            if (
+              resultData.compile_output &&
+              resultData.compile_output.includes("expected")
+            ) {
+              newOutput +=
+                "\n\n💡 Tip: Check for missing semicolons, brackets, or typos.";
             }
           } else if ([7, 8, 9].includes(resultData.status.id)) {
             // Runtime Errors
             const errorNames = {
-              7: 'Runtime Error (SIGSEGV - Segmentation Fault)',
-              8: 'Runtime Error (SIGXFSZ - Output Limit Exceeded)',
-              9: 'Runtime Error (SIGFPE - Floating Point Exception)'
+              7: "Runtime Error (SIGSEGV - Segmentation Fault)",
+              8: "Runtime Error (SIGXFSZ - Output Limit Exceeded)",
+              9: "Runtime Error (SIGFPE - Floating Point Exception)",
             };
-            newOutput = `❌ ${errorNames[resultData.status.id] || 'Runtime Error'}\n\n`;
-            newOutput += resultData.stderr || resultData.message || 'Your program crashed during execution.';
-            
+            newOutput = `❌ ${
+              errorNames[resultData.status.id] || "Runtime Error"
+            }\n\n`;
+            newOutput +=
+              resultData.stderr ||
+              resultData.message ||
+              "Your program crashed during execution.";
+
             if (resultData.status.id === 7) {
-              newOutput += '\n\n💡 Tip: Check for array out of bounds, null pointer dereference, or stack overflow.';
+              newOutput +=
+                "\n\n💡 Tip: Check for array out of bounds, null pointer dereference, or stack overflow.";
             }
           } else if (resultData.status.id === 10) {
             newOutput = `⏱️ Time Limit Exceeded\n\nExecution took too long.`;
@@ -968,62 +1084,76 @@ const InterviewPlatform = () => {
           } else if (resultData.status.id === 12) {
             newOutput = `🚫 Illegal System Call\n\nYour program tried to perform a restricted operation.`;
           } else if (resultData.status.id === 13) {
-            newOutput = `⚠️ Judge0 Internal Error\n\n${resultData.message || 'The judge system encountered an error. Try again.'}`;
+            newOutput = `⚠️ Judge0 Internal Error\n\n${
+              resultData.message ||
+              "The judge system encountered an error. Try again."
+            }`;
           } else {
             newOutput = `Status: ${resultData.status.description}\n\n`;
-            if (resultData.stdout) newOutput += `Output:\n${resultData.stdout}\n\n`;
-            if (resultData.stderr) newOutput += `Stderr:\n${resultData.stderr}\n\n`;
-            if (resultData.compile_output) newOutput += `Compile Output:\n${resultData.compile_output}`;
+            if (resultData.stdout)
+              newOutput += `Output:\n${resultData.stdout}\n\n`;
+            if (resultData.stderr)
+              newOutput += `Stderr:\n${resultData.stderr}\n\n`;
+            if (resultData.compile_output)
+              newOutput += `Compile Output:\n${resultData.compile_output}`;
           }
-          
-          console.log('Execution completed. Status:', resultData.status.description);
+
+          console.log(
+            "Execution completed. Status:",
+            resultData.status.description
+          );
           setOutput(newOutput);
-          
+
           if (socketRef.current && roomId) {
-            socketRef.current.emit('output-update', {
+            socketRef.current.emit("output-update", {
               roomId,
-              output: newOutput
+              output: newOutput,
             });
           }
-          
+
           break;
         }
-        
+
         attempts++;
       }
-      
-      if (attempts >= maxAttempts) {
-        throw new Error('⏱️ Execution Timeout\n\nThe code is taking too long to execute. It may have an infinite loop or be waiting for input.');
-      }
 
+      if (attempts >= maxAttempts) {
+        throw new Error(
+          "⏱️ Execution Timeout\n\nThe code is taking too long to execute. It may have an infinite loop or be waiting for input."
+        );
+      }
     } catch (error) {
-      console.error('Execution error:', error);
-      
+      console.error("Execution error:", error);
+
       // FIXED: Create detailed error output
       let errorOutput = `❌ Execution Error\n\n`;
-      
+
       if (error.message) {
         errorOutput += `${error.message}\n`;
       } else {
         errorOutput += `${error.toString()}\n`;
       }
-      
+
       // Add stack trace for debugging if available
-      if (error.stack && !error.message.includes('Judge0')) {
-        errorOutput += `\n📋 Debug Info:\n${error.stack.split('\n').slice(0, 3).join('\n')}`;
+      if (error.stack && !error.message.includes("Judge0")) {
+        errorOutput += `\n📋 Debug Info:\n${error.stack
+          .split("\n")
+          .slice(0, 3)
+          .join("\n")}`;
       }
-      
+
       // Add network error details if available
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        errorOutput += '\n\n🌐 Network Error: Could not connect to Judge0 API. Check your internet connection.';
+      if (error.name === "TypeError" && error.message.includes("fetch")) {
+        errorOutput +=
+          "\n\n🌐 Network Error: Could not connect to Judge0 API. Check your internet connection.";
       }
-      
+
       setOutput(errorOutput);
-      
+
       if (socketRef.current && roomId) {
-        socketRef.current.emit('output-update', {
+        socketRef.current.emit("output-update", {
           roomId,
-          output: errorOutput
+          output: errorOutput,
         });
       }
     } finally {
@@ -1035,7 +1165,9 @@ const InterviewPlatform = () => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs.toString().padStart(2, "0")}:${mins
+      .toString()
+      .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   const startInterview = () => {
@@ -1051,41 +1183,46 @@ const InterviewPlatform = () => {
   // FIXED: Updated sendMessage to use controlled state
   const sendMessage = useCallback(() => {
     const message = chatInput.trim();
-    
+
     if (message && socketRef.current && roomId) {
       const messageData = {
         roomId,
         message,
         senderRole: userRole,
-        senderName: userName || (userRole === 'interviewer' ? 'Interviewer' : 'Candidate'),
-        timestamp: new Date().toISOString()
+        senderName:
+          userName ||
+          (userRole === "interviewer" ? "Interviewer" : "Candidate"),
+        timestamp: new Date().toISOString(),
       };
-      
-      console.log('Sending message:', messageData);
-      socketRef.current.emit('chat-message', messageData);
-      
-      setChatInput(''); // Clear controlled input
+
+      console.log("Sending message:", messageData);
+      socketRef.current.emit("chat-message", messageData);
+
+      setChatInput(""); // Clear controlled input
     }
   }, [chatInput, roomId, userRole, userName]);
 
-  const handleChatKeyDown = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }, [sendMessage]);
+  const handleChatKeyDown = useCallback(
+    (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    },
+    [sendMessage]
+  );
 
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   const getRoleLabel = (role) => {
-    return role === 'interviewer' ? 'Interviewer' : 'Candidate';
+    return role === "interviewer" ? "Interviewer" : "Candidate";
   };
 
   const getOppositeRole = () => {
-    return userRole === 'interviewer' ? 'Candidate' : 'Interviewer';
+    return userRole === "interviewer" ? "Candidate" : "Interviewer";
   };
 
   // FIXED: ChatPanel with controlled textarea wrapped in useMemo
@@ -1096,10 +1233,12 @@ const InterviewPlatform = () => {
           <div className="chat-title">
             <MessageSquare size={18} />
             Chat
-            {unreadCount > 0 && <span className="unread-badge">{unreadCount}</span>}
+            {unreadCount > 0 && (
+              <span className="unread-badge">{unreadCount}</span>
+            )}
           </div>
-          <button 
-            className="chat-toggle-btn" 
+          <button
+            className="chat-toggle-btn"
             onClick={() => setShowChat(false)}
             title="Minimize chat"
             type="button"
@@ -1107,7 +1246,7 @@ const InterviewPlatform = () => {
             <Minimize2 size={16} />
           </button>
         </div>
-        
+
         <div className="chat-messages" ref={chatMessagesRef}>
           {messages.length === 0 ? (
             <div className="chat-empty">
@@ -1115,13 +1254,16 @@ const InterviewPlatform = () => {
             </div>
           ) : (
             messages.map((msg) => (
-              <div 
-                key={msg.id} 
-                className={`chat-message ${msg.isOwn ? 'own' : 'other'}`}
+              <div
+                key={msg.id}
+                className={`chat-message ${msg.isOwn ? "own" : "other"}`}
               >
                 {!msg.isOwn && (
                   <div className="message-sender">
-                    {msg.senderName || (msg.senderRole === 'interviewer' ? 'Interviewer' : 'Candidate')}
+                    {msg.senderName ||
+                      (msg.senderRole === "interviewer"
+                        ? "Interviewer"
+                        : "Candidate")}
                   </div>
                 )}
                 <div className="message-bubble">{msg.text}</div>
@@ -1132,7 +1274,7 @@ const InterviewPlatform = () => {
             ))
           )}
         </div>
-        
+
         <div className="chat-input-container">
           <textarea
             className="chat-input"
@@ -1142,8 +1284,8 @@ const InterviewPlatform = () => {
             placeholder="Type a message..."
             rows={1}
           />
-          <button 
-            className="chat-send-btn" 
+          <button
+            className="chat-send-btn"
             onClick={sendMessage}
             title="Send message"
             type="button"
@@ -1165,17 +1307,19 @@ const InterviewPlatform = () => {
               Please select your role to continue
             </div>
             <div className="role-buttons">
-              <button 
-                className="role-btn interviewer-btn" 
-                onClick={() => selectRole('interviewer')}
+              <button
+                className="role-btn interviewer-btn"
+                onClick={() => selectRole("interviewer")}
               >
                 <div className="role-icon">👔</div>
                 <div className="role-title">Interviewer</div>
-                <div className="role-desc">Watch candidate's screen and conduct interview</div>
+                <div className="role-desc">
+                  Watch candidate's screen and conduct interview
+                </div>
               </button>
-              <button 
-                className="role-btn candidate-btn" 
-                onClick={() => selectRole('candidate')}
+              <button
+                className="role-btn candidate-btn"
+                onClick={() => selectRole("candidate")}
               >
                 <div className="role-icon">💻</div>
                 <div className="role-title">Candidate</div>
@@ -1194,19 +1338,17 @@ const InterviewPlatform = () => {
             </div>
             <div className="modal-header">End Interview?</div>
             <div className="modal-description">
-              Are you sure you want to end this interview session? This action cannot be undone.
+              Are you sure you want to end this interview session? This action
+              cannot be undone.
             </div>
             <div className="modal-actions">
-              <button 
-                className="btn btn-secondary" 
+              <button
+                className="btn btn-secondary"
                 onClick={() => setShowEndCallModal(false)}
               >
                 Cancel
               </button>
-              <button 
-                className="btn btn-danger" 
-                onClick={endCall}
-              >
+              <button className="btn btn-danger" onClick={endCall}>
                 <PhoneOff size={18} />
                 End Interview
               </button>
@@ -1217,11 +1359,14 @@ const InterviewPlatform = () => {
 
       <div className="header">
         <div className="logo">⚡ CodeInterview</div>
-        
+
         <div className="timer-control">
-          <div className="timer-display" style={{
-            color: timeRemaining < 300 ? '#ef4444' : '#63b3ed'
-          }}>
+          <div
+            className="timer-display"
+            style={{
+              color: timeRemaining < 300 ? "#ef4444" : "#63b3ed",
+            }}
+          >
             {formatTime(timeRemaining)}
           </div>
           {!isTimerRunning && (
@@ -1234,11 +1379,14 @@ const InterviewPlatform = () => {
 
         <div className="controls">
           <div className={`status-indicator ${connectionStatus}`}>
-            {connectionStatus === 'in-room' ? '🟢 Connected' : 
-             connectionStatus === 'connected' ? '🟡 Joining...' : '🔴 Disconnected'}
+            {connectionStatus === "in-room"
+              ? "🟢 Connected"
+              : connectionStatus === "connected"
+              ? "🟡 Joining..."
+              : "🔴 Disconnected"}
           </div>
-          <button 
-            className="btn btn-primary chat-btn" 
+          <button
+            className="btn btn-primary chat-btn"
             onClick={() => setShowChat(!showChat)}
             title={showChat ? "Hide chat" : "Show chat"}
           >
@@ -1247,23 +1395,23 @@ const InterviewPlatform = () => {
               <span className="unread-badge">{unreadCount}</span>
             )}
           </button>
-          <button 
-            className="btn btn-primary" 
+          <button
+            className="btn btn-primary"
             onClick={() => setShowShareModal(true)}
             title="Share Interview Link"
           >
             <Share2 size={18} />
             Share Link
           </button>
-          <button 
-            className="icon-btn" 
+          <button
+            className="icon-btn"
             onClick={() => setShowInputPanel(!showInputPanel)}
             title="Custom Input"
           >
             <FileText size={20} />
           </button>
-          <button 
-            className="icon-btn" 
+          <button
+            className="icon-btn"
             onClick={() => setShowSettings(!showSettings)}
             title="Settings"
           >
@@ -1277,14 +1425,15 @@ const InterviewPlatform = () => {
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">Share Interview Link</div>
             <div className="modal-description">
-              Share this link with the {getOppositeRole().toLowerCase()} to join the interview
+              Share this link with the {getOppositeRole().toLowerCase()} to join
+              the interview
             </div>
             <div className="link-container">
-              <input 
-                type="text" 
-                className="link-input" 
-                value={createInterviewLink()} 
-                readOnly 
+              <input
+                type="text"
+                className="link-input"
+                value={createInterviewLink()}
+                readOnly
               />
               <button className="copy-btn" onClick={copyLinkToClipboard}>
                 {linkCopied ? (
@@ -1301,7 +1450,10 @@ const InterviewPlatform = () => {
               </button>
             </div>
             <div className="modal-actions">
-              <button className="btn btn-secondary" onClick={() => setShowShareModal(false)}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowShareModal(false)}
+              >
                 Close
               </button>
             </div>
@@ -1314,27 +1466,29 @@ const InterviewPlatform = () => {
           <div className="settings-header">
             <span>Interview Settings</span>
             {!JUDGE0_API_KEY && (
-              <span style={{ color: '#ef4444', fontSize: '12px' }}>⚠️ API Key Missing</span>
+              <span style={{ color: "#ef4444", fontSize: "12px" }}>
+                ⚠️ API Key Missing
+              </span>
             )}
           </div>
           <div className="setting-item">
             <label className="setting-label">Time Limit (minutes)</label>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input 
-                type="number" 
-                value={timeLimit} 
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <input
+                type="number"
+                value={timeLimit}
                 onChange={(e) => setTimeLimit(parseInt(e.target.value) || 60)}
                 min="1"
                 max="180"
                 style={{ flex: 1 }}
               />
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={() => {
                   setTimeRemaining(timeLimit * 60);
                   setIsTimerRunning(false);
                 }}
-                style={{ padding: '8px 16px', fontSize: '14px' }}
+                style={{ padding: "8px 16px", fontSize: "14px" }}
               >
                 Apply
               </button>
@@ -1342,8 +1496,11 @@ const InterviewPlatform = () => {
           </div>
           <div className="setting-item">
             <label className="setting-label">Default Language</label>
-            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-              {languages.map(lang => (
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+            >
+              {languages.map((lang) => (
                 <option key={lang} value={lang}>
                   {lang.charAt(0).toUpperCase() + lang.slice(1)}
                 </option>
@@ -1356,8 +1513,8 @@ const InterviewPlatform = () => {
           </div>
           <div className="setting-item">
             <label className="setting-label">Your Name</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
               placeholder="Enter your name (optional)"
@@ -1369,49 +1526,53 @@ const InterviewPlatform = () => {
           </div>
           <div className="setting-item">
             <label className="setting-label">API Key Status</label>
-            <input 
-              type="text" 
-              value={JUDGE0_API_KEY ? `Configured (${JUDGE0_API_KEY.substring(0, 10)}...)` : 'NOT CONFIGURED'} 
-              readOnly 
-              style={{ color: JUDGE0_API_KEY ? '#0a0' : '#f00' }}
+            <input
+              type="text"
+              value={
+                JUDGE0_API_KEY
+                  ? `Configured (${JUDGE0_API_KEY.substring(0, 10)}...)`
+                  : "NOT CONFIGURED"
+              }
+              readOnly
+              style={{ color: JUDGE0_API_KEY ? "#0a0" : "#f00" }}
             />
           </div>
         </div>
       )}
 
       {showInputPanel && (
-        <div className="settings-panel" style={{ right: '140px' }}>
-          <div className="settings-header">
-            Custom Input
-          </div>
+        <div className="settings-panel" style={{ right: "140px" }}>
+          <div className="settings-header">Custom Input</div>
           <div className="setting-item">
-            <label className="setting-label">Enter input for your program (optional)</label>
+            <label className="setting-label">
+              Enter input for your program (optional)
+            </label>
             <textarea
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               placeholder="Enter input here... (e.g., numbers, text)"
               style={{
-                width: '100%',
-                minHeight: '200px',
-                padding: '10px',
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(99, 179, 237, 0.3)',
-                borderRadius: '8px',
-                color: '#e8eaed',
-                fontSize: '13px',
-                fontFamily: 'Consolas, Monaco, monospace',
-                resize: 'vertical'
+                width: "100%",
+                minHeight: "200px",
+                padding: "10px",
+                background: "rgba(0, 0, 0, 0.3)",
+                border: "1px solid rgba(99, 179, 237, 0.3)",
+                borderRadius: "8px",
+                color: "#e8eaed",
+                fontSize: "13px",
+                fontFamily: "Consolas, Monaco, monospace",
+                resize: "vertical",
               }}
             />
           </div>
-          <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '8px' }}>
+          <div style={{ fontSize: "12px", color: "#94a3b8", marginTop: "8px" }}>
             💡 Tip: Each line will be treated as separate input
           </div>
         </div>
       )}
 
       <div className="main-content">
-        {userRole === 'interviewer' ? (
+        {userRole === "interviewer" ? (
           <>
             <div className="interviewer-view">
               <div className="large-video-container">
@@ -1423,31 +1584,35 @@ const InterviewPlatform = () => {
                 <div className="video-label">You</div>
               </div>
               <div className="interviewer-controls">
-                <button 
-                  className={`icon-btn ${videoEnabled ? 'active' : 'danger'}`}
+                <button
+                  className={`icon-btn ${videoEnabled ? "active" : "danger"}`}
                   onClick={toggleVideo}
-                  title={videoEnabled ? 'Turn off camera' : 'Turn on camera'}
+                  title={videoEnabled ? "Turn off camera" : "Turn on camera"}
                 >
-                  {videoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
+                  {videoEnabled ? (
+                    <Camera size={20} />
+                  ) : (
+                    <CameraOff size={20} />
+                  )}
                 </button>
-                
-                <button 
-                  className={`icon-btn ${audioEnabled ? 'active' : 'danger'}`}
+
+                <button
+                  className={`icon-btn ${audioEnabled ? "active" : "danger"}`}
                   onClick={toggleAudio}
-                  title={audioEnabled ? 'Mute' : 'Unmute'}
+                  title={audioEnabled ? "Mute" : "Unmute"}
                 >
                   {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
                 </button>
 
-                <button 
-                  className={`icon-btn ${isScreenSharing ? 'active' : ''}`}
+                <button
+                  className={`icon-btn ${isScreenSharing ? "active" : ""}`}
                   onClick={toggleScreenShare}
                   title="Share screen"
                 >
                   <MonitorUp size={20} />
                 </button>
 
-                <button 
+                <button
                   className="icon-btn"
                   onClick={() => {
                     if (document.fullscreenElement) {
@@ -1461,7 +1626,7 @@ const InterviewPlatform = () => {
                   <Maximize2 size={20} />
                 </button>
 
-                <button 
+                <button
                   className="icon-btn end-call-btn"
                   onClick={confirmEndCall}
                   title="End Call"
@@ -1477,7 +1642,9 @@ const InterviewPlatform = () => {
             <div className="video-section">
               <div className="video-container">
                 <video ref={localVideoRef} autoPlay muted playsInline />
-                <div className="video-label">You {isScreenSharing && '(Sharing)'}</div>
+                <div className="video-label">
+                  You {isScreenSharing && "(Sharing)"}
+                </div>
               </div>
 
               <div className="video-container">
@@ -1486,31 +1653,35 @@ const InterviewPlatform = () => {
               </div>
 
               <div className="video-controls">
-                <button 
-                  className={`icon-btn ${videoEnabled ? 'active' : 'danger'}`}
+                <button
+                  className={`icon-btn ${videoEnabled ? "active" : "danger"}`}
                   onClick={toggleVideo}
-                  title={videoEnabled ? 'Turn off camera' : 'Turn on camera'}
+                  title={videoEnabled ? "Turn off camera" : "Turn on camera"}
                 >
-                  {videoEnabled ? <Camera size={20} /> : <CameraOff size={20} />}
+                  {videoEnabled ? (
+                    <Camera size={20} />
+                  ) : (
+                    <CameraOff size={20} />
+                  )}
                 </button>
-                
-                <button 
-                  className={`icon-btn ${audioEnabled ? 'active' : 'danger'}`}
+
+                <button
+                  className={`icon-btn ${audioEnabled ? "active" : "danger"}`}
                   onClick={toggleAudio}
-                  title={audioEnabled ? 'Mute' : 'Unmute'}
+                  title={audioEnabled ? "Mute" : "Unmute"}
                 >
                   {audioEnabled ? <Mic size={20} /> : <MicOff size={20} />}
                 </button>
-                
-                <button 
-                  className={`icon-btn ${isScreenSharing ? 'active' : ''}`}
+
+                <button
+                  className={`icon-btn ${isScreenSharing ? "active" : ""}`}
                   onClick={toggleScreenShare}
                   title="Share screen"
                 >
                   <MonitorUp size={20} />
                 </button>
 
-                <button 
+                <button
                   className="icon-btn"
                   onClick={() => {
                     if (document.fullscreenElement) {
@@ -1524,7 +1695,7 @@ const InterviewPlatform = () => {
                   <Maximize2 size={20} />
                 </button>
 
-                <button 
+                <button
                   className="icon-btn end-call-btn"
                   onClick={confirmEndCall}
                   title="End Call"
@@ -1537,16 +1708,18 @@ const InterviewPlatform = () => {
             <div className="editor-section">
               <div className="editor-header">
                 <div className="mode-selector">
-                  <button 
-                    className={`mode-button ${mode === 'ide' ? 'active' : ''}`}
-                    onClick={() => setMode('ide')}
+                  <button
+                    className={`mode-button ${mode === "ide" ? "active" : ""}`}
+                    onClick={() => setMode("ide")}
                   >
                     <Code size={16} />
                     Code Editor
                   </button>
-                  <button 
-                    className={`mode-button ${mode === 'document' ? 'active' : ''}`}
-                    onClick={() => setMode('document')}
+                  <button
+                    className={`mode-button ${
+                      mode === "document" ? "active" : ""
+                    }`}
+                    onClick={() => setMode("document")}
                   >
                     <FileText size={16} />
                     Plain Text
@@ -1554,29 +1727,32 @@ const InterviewPlatform = () => {
                 </div>
 
                 <div className="language-selector">
-                  {mode === 'ide' && (
+                  {mode === "ide" && (
                     <>
-                      <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                        {languages.map(lang => (
+                      <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                      >
+                        {languages.map((lang) => (
                           <option key={lang} value={lang}>
                             {lang.charAt(0).toUpperCase() + lang.slice(1)}
                           </option>
                         ))}
                       </select>
-                      <button 
-                        className="btn btn-primary" 
+                      <button
+                        className="btn btn-primary"
                         onClick={executeCode}
                         disabled={isExecuting}
                       >
                         <Play size={16} />
-                        {isExecuting ? 'Executing...' : 'Run Code'}
+                        {isExecuting ? "Executing..." : "Run Code"}
                       </button>
                     </>
                   )}
                 </div>
               </div>
 
-              {mode === 'ide' ? (
+              {mode === "ide" ? (
                 <div className="editor-container">
                   <textarea
                     ref={codeEditorRef}
@@ -1599,16 +1775,22 @@ const InterviewPlatform = () => {
                 </div>
               )}
 
-              {mode === 'ide' && (
+              {mode === "ide" && (
                 <div className="output-section">
-                  <strong style={{ color: '#63b3ed' }}>Output:</strong>
-                  <pre style={{ marginTop: '8px', color: '#94a3b8', whiteSpace: 'pre-wrap' }}>
+                  <strong style={{ color: "#63b3ed" }}>Output:</strong>
+                  <pre
+                    style={{
+                      marginTop: "8px",
+                      color: "#94a3b8",
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
                     {output || 'Click "Run Code" to see output...'}
                   </pre>
                 </div>
               )}
             </div>
-            
+
             {showChat && ChatPanel}
           </>
         )}
