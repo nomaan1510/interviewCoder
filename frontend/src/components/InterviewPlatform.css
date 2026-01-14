@@ -367,8 +367,6 @@ select:focus {
   top: 80px;
   right: 24px;
   width: 320px;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
   background: rgba(15, 20, 40, 0.95);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(99, 179, 237, 0.3);
@@ -440,7 +438,6 @@ select:focus {
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
-  padding: 20px;
 }
 
 @keyframes fadeIn {
@@ -898,10 +895,7 @@ select:focus {
   right: -4px;
 }
 
-/* ============================================ */
-/* RESPONSIVE STYLES - MOBILE & TABLET */
-/* ============================================ */
-
+/* Responsive */
 @media (max-width: 1400px) {
   .video-section {
     width: 300px;
@@ -945,268 +939,32 @@ select:focus {
   .timer-display {
     font-size: 24px;
   }
-  
-  .settings-panel {
-    width: 280px;
-    right: 16px;
-  }
 }
 
-/* Mobile Responsive - Major Changes */
 @media (max-width: 768px) {
-  /* Header adjustments */
-  .header {
-    height: 60px;
-    padding: 0 12px;
-  }
-
-  .logo {
-    font-size: 18px;
-  }
-
-  .timer-control {
-    gap: 8px;
-  }
-
-  .timer-display {
-    font-size: 20px;
-    min-width: 90px;
-  }
-
-  .controls {
-    gap: 6px;
-  }
-
-  .status-indicator {
-    display: none; /* Hide on mobile to save space */
-  }
-
-  .btn {
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .btn span {
-    display: none; /* Hide button text, show only icons */
-  }
-
-  .icon-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  /* Main content stack vertically on mobile */
   .main-content {
     flex-direction: column;
-    padding: 8px;
-    gap: 8px;
   }
 
-  /* Video section full width on mobile */
   .video-section {
     width: 100%;
     flex-direction: row;
     height: auto;
-    gap: 8px;
   }
 
   .video-container {
     flex: 1;
-    min-height: 150px;
-  }
-
-  .video-controls {
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: 8px;
-  }
-
-  /* Editor section adjustments */
-  .editor-section {
-    border-radius: 12px;
-  }
-
-  .editor-header {
-    padding: 12px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .mode-selector {
-    width: 100%;
-  }
-
-  .mode-button {
-    flex: 1;
-    padding: 8px 12px;
-    font-size: 12px;
-  }
-
-  .language-selector {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .language-selector select,
-  .language-selector .btn {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .code-editor,
-  .text-editor {
-    padding: 12px;
-    font-size: 13px;
-  }
-
-  .output-section {
-    height: 150px;
-    padding: 12px;
-    font-size: 12px;
-  }
-
-  /* Chat panel - full screen overlay on mobile */
-  .chat-panel {
-    position: fixed;
-    right: 0;
-    top: 60px;
-    bottom: 0;
-    width: 100%;
-    max-width: 100%;
-    border-radius: 0;
-    z-index: 999;
-  }
-
-  /* Settings panel - full screen on mobile */
-  .settings-panel {
-    position: fixed;
-    top: 60px;
-    right: 0;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    max-width: 100%;
-    border-radius: 0;
-    max-height: none;
-    padding: 16px;
-  }
-
-  /* Interviewer view adjustments */
-  .small-video-container {
-    width: 120px;
-    bottom: 70px;
-    right: 12px;
-  }
-
-  .interviewer-controls {
-    gap: 8px;
-    padding: 12px;
-    flex-wrap: wrap;
-  }
-
-  /* Modals - full width on mobile */
-  .modal {
-    padding: 24px;
-    width: 95%;
-  }
-
-  .modal-header {
-    font-size: 20px;
-  }
-
-  .modal-description {
-    font-size: 13px;
-  }
-
-  .link-container {
-    flex-direction: column;
-  }
-
-  .link-input {
-    font-size: 12px;
-    padding: 10px 12px;
-  }
-
-  .copy-btn {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .role-buttons {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .role-btn {
-    padding: 24px 20px;
-  }
-
-  .role-icon {
-    font-size: 40px;
-  }
-
-  .role-title {
-    font-size: 18px;
-  }
-
-  .role-desc {
-    font-size: 12px;
-  }
-}
-
-/* Extra small devices */
-@media (max-width: 480px) {
-  .logo {
-    font-size: 16px;
-  }
-
-  .timer-display {
-    font-size: 18px;
-    min-width: 80px;
-  }
-
-  .timer-control .btn {
-    padding: 6px 10px;
-  }
-
-  .icon-btn {
-    width: 32px;
-    height: 32px;
-  }
-
-  .video-container {
-    min-height: 120px;
-  }
-
-  .small-video-container {
-    width: 100px;
-  }
-
-  .code-editor,
-  .text-editor {
-    font-size: 12px;
-  }
-
-  .modal {
-    padding: 20px;
-  }
-}
-
-/* Landscape mode on mobile */
-@media (max-width: 768px) and (orientation: landscape) {
-  .main-content {
-    flex-direction: row;
-  }
-
-  .video-section {
-    width: 50%;
-  }
-
-  .editor-section {
-    width: 50%;
+    min-height: 200px;
   }
 
   .chat-panel {
-    max-width: 50%;
+    position: fixed;
+    right: 0;
+    top: 70px;
+    bottom: 0;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 0;
+    z-index: 150;
   }
 }
