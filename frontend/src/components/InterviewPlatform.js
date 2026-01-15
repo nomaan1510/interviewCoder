@@ -1323,9 +1323,9 @@ const InterviewPlatform = () => {
         marginBottom: '20px',
         color: '#e8eaed'
       }}>
-        Our backend server is hosted on Render's free tier and may be sleeping. 
+        Connecting... (may take 30-50s if backend is sleeping) 
         <br/><br/>
-        <strong style={{ color: '#63b3ed' }}>First-time loading may take 30-60 seconds.</strong>
+        {/* <strong style={{ color: '#63b3ed' }}>First-time loading may take 30-60 seconds.</strong> */}
         <br/><br/>
         Please be patient while the server wakes up. Thank you for your understanding! 🙏
       </div>
