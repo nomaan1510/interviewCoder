@@ -29,6 +29,9 @@ import {
 } from "lucide-react";
 import "./InterviewPlatform.css";
 
+// Check backend status on mount
+
+
 const SIGNALING_SERVER =
   process.env.REACT_APP_API_URL || "http://localhost:3001";
 
@@ -202,6 +205,7 @@ fun main() {
 
 const InterviewPlatform = () => {
   // State management
+  const [isBackendLoading, setIsBackendLoading] = useState(true);
   const [mode, setMode] = useState("ide");
   const [language, setLanguage] = useState("javascript");
   const [timeLimit, setTimeLimit] = useState(60);
@@ -222,6 +226,7 @@ const InterviewPlatform = () => {
   const [userName, setUserName] = useState("");
   const [showRoleModal, setShowRoleModal] = useState(true);
   const [showEndCallModal, setShowEndCallModal] = useState(false);
+  
 
   // Chat state - FIXED: Use controlled state instead of defaultValue
   const [messages, setMessages] = useState([]);
@@ -574,6 +579,26 @@ const InterviewPlatform = () => {
       }
     }
   }, [language]);
+
+  useEffect(() => {
+  const checkBackend = async () => {
+    try {
+      const response = await fetch(`${SIGNALING_SERVER}/health`, {
+        method: 'GET',
+      });
+      
+      if (response.ok) {
+        setTimeout(() => setIsBackendLoading(false), 500);
+      } else {
+        setTimeout(checkBackend, 2000);
+      }
+    } catch (error) {
+      setTimeout(checkBackend, 2000);
+    }
+  };
+
+  checkBackend();
+}, []);
 
   const startLocalVideo = async () => {
     try {
