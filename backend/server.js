@@ -135,9 +135,7 @@ app.get("/", (req, res) => {
 });
 
 // Health check endpoint for backend wake-up detection
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+
 
 server.listen(PORT, () => {
   console.log(`Signaling server running on port ${PORT}`);

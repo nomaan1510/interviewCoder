@@ -205,7 +205,8 @@ fun main() {
 
 const InterviewPlatform = () => {
   // State management
-  const [isBackendLoading, setIsBackendLoading] = useState(true);
+  
+  const [showBackendWarning, setShowBackendWarning] = useState(true);
   const [mode, setMode] = useState("ide");
   const [language, setLanguage] = useState("javascript");
   const [timeLimit, setTimeLimit] = useState(60);
@@ -580,25 +581,7 @@ const InterviewPlatform = () => {
     }
   }, [language]);
 
-  useEffect(() => {
-  const checkBackend = async () => {
-    try {
-      const response = await fetch(`${SIGNALING_SERVER}/health`, {
-        method: 'GET',
-      });
-      
-      if (response.ok) {
-        setTimeout(() => setIsBackendLoading(false), 500);
-      } else {
-        setTimeout(checkBackend, 2000);
-      }
-    } catch (error) {
-      setTimeout(checkBackend, 2000);
-    }
-  };
-
-  checkBackend();
-}, []);
+  
 
   const startLocalVideo = async () => {
     try {
@@ -1324,6 +1307,43 @@ const InterviewPlatform = () => {
 
   return (
     <div className="interview-platform">
+    {showBackendWarning && (
+  <div className="modal-overlay" style={{ zIndex: 9999 }}>
+    <div className="modal" style={{ maxWidth: '450px', textAlign: 'center' }}>
+      <div style={{ 
+        fontSize: '48px',
+        marginBottom: '20px'
+      }}>
+        ⚠️
+      </div>
+      <div className="modal-header">Backend Wake-up Notice</div>
+      <div className="modal-description" style={{ 
+        fontSize: '15px',
+        lineHeight: '1.6',
+        marginBottom: '20px',
+        color: '#e8eaed'
+      }}>
+        Our backend server is hosted on Render's free tier and may be sleeping. 
+        <br/><br/>
+        <strong style={{ color: '#63b3ed' }}>First-time loading may take 30-60 seconds.</strong>
+        <br/><br/>
+        Please be patient while the server wakes up. Thank you for your understanding! 🙏
+      </div>
+      <button 
+        className="btn btn-primary" 
+        onClick={() => setShowBackendWarning(false)}
+        style={{ 
+          width: '100%',
+          justifyContent: 'center',
+          fontSize: '16px',
+          padding: '14px'
+        }}
+      >
+        OK, I Understand
+      </button>
+    </div>
+  </div>
+)}
       {showRoleModal && (
         <div className="modal-overlay">
           <div className="modal role-modal">
